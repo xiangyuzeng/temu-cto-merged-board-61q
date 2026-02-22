@@ -1,0 +1,16 @@
+export const metadata = {
+  title: 'Temu DBA · CTO终面答题板',
+  description: '61题合并版 · 8模块 · TI01+TI02+面试脚本V1+V2+CTO深度场景 · 行为+项目+技术+文化',
+};
+export default function RootLayout({ children }) {
+  return (
+    <html lang="zh-CN">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+      </head>
+      <body>{children}</body>
+    </html>
+  );
+}
