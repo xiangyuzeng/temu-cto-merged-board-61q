@@ -1,6 +1,6 @@
 export const metadata = {
   title: 'Temu DBA · CTO终面答题板',
-  description: '61题合并版 · 8模块 · TI01+TI02+面试脚本V1+V2+CTO深度场景 · 行为+项目+技术+文化',
+  description: '61题 · 8模块 · 含二轮面试自建MySQL洞察 · 行为+项目+技术+文化',
 };
 export default function RootLayout({ children }) {
   return (
