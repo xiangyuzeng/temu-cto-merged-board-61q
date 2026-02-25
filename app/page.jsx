@@ -42,26 +42,39 @@ export default function Board() {
     setCollapsed((p) => { const n = { ...p }; if (n[id]) delete n[id]; else n[id] = 1; return n; });
   }, []);
 
-  const matchCards = useMemo(() => {
+  const { matchCards, titleHits } = useMemo(() => {
     const ql = q.toLowerCase();
     const m = new Set();
+    const th = new Set();
     allCards.forEach((c) => {
       if (modF !== "all" && c.modId !== modF) return;
       if (typeF !== "all" && c.qtype !== typeF) return;
       if (undone && done[c.id]) return;
-      if (ql && !c.title.toLowerCase().includes(ql) && !c.answer.toLowerCase().includes(ql)) return;
+      if (ql) {
+        const titleMatch = c.title.toLowerCase().includes(ql);
+        const answerMatch = c.answer.toLowerCase().includes(ql);
+        if (!titleMatch && !answerMatch) return;
+        if (titleMatch) th.add(c.id);
+      }
       m.add(c.id);
     });
-    return m;
+    return { matchCards: m, titleHits: th };
   }, [q, modF, typeF, undone, done]);
 
   const visMods = useMemo(() => {
     return modules.map((mod) => {
-      const visCards = mod.cards.filter((c) => matchCards.has(c.id));
+      let visCards = mod.cards.filter((c) => matchCards.has(c.id));
       if (visCards.length === 0) return null;
+      if (q && titleHits.size > 0) {
+        visCards = [...visCards].sort((a, b) => {
+          const aHit = titleHits.has(a.id) ? 0 : 1;
+          const bHit = titleHits.has(b.id) ? 0 : 1;
+          return aHit - bHit;
+        });
+      }
       return { ...mod, visCards };
     }).filter(Boolean);
-  }, [matchCards]);
+  }, [matchCards, titleHits, q]);
 
   const openCard = (id) => { const c = cardMap[id]; if (c) setSel(c); };
   const navCard = (dir) => {
@@ -97,7 +110,7 @@ export default function Board() {
                 TEMU DBA · CTO终面答题板
               </h1>
               <p style={{ margin: "3px 0 0", fontSize: 11, color: "#888", letterSpacing: 0.5 }}>
-                61题 · 8模块 · 含二轮面试自建MySQL洞察 · 行为40% · 项目25% · 技术20% · 文化15%
+                {total}题 · {modules.length}模块 · 行为面试 · 技术场景 · 文化适配 · 自我认知
               </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -112,7 +125,7 @@ export default function Board() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
             <div style={{ position: "relative", flex: "1 1 160px", minWidth: 140 }}>
-              <input type="text" placeholder="搜索题目或答案..." value={q} onChange={(e) => setQ(e.target.value)}
+              <input type="text" placeholder="搜索题目关键词..." value={q} onChange={(e) => setQ(e.target.value)}
                 style={{ width: "100%", padding: "6px 28px 6px 30px", borderRadius: 8, border: "1px solid #ddd", background: "#fff", color: "#1a1a1a", fontSize: 12, outline: "none" }} />
               <span style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, opacity: 0.4 }}>🔍</span>
               {q && <button onClick={() => setQ("")} style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#999", cursor: "pointer", fontSize: 11 }}>✕</button>}
@@ -199,7 +212,12 @@ export default function Board() {
                             {isDone ? "✓" : ""}
                           </button>
                         </div>
-                        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.55, color: "#2a2a2a" }}>{c.title}</h3>
+                        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.55, color: "#2a2a2a" }}>
+                          {q && titleHits.has(c.id) ? highlightText(c.title, q) : c.title}
+                        </h3>
+                        {q && titleHits.has(c.id) && (
+                          <span style={{ display: "inline-block", marginTop: 4, fontSize: 9, padding: "1px 5px", borderRadius: 3, background: "#FFF8E1", color: "#F57F17", fontWeight: 600 }}>标题匹配</span>
+                        )}
                         <div style={{ marginTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           <span style={{ fontSize: 10, color: "#bbb", fontFamily: "'JetBrains Mono', monospace" }}>{c.charCount}字 · ~{readMin(c.charCount)}分钟</span>
                           <span style={{ fontSize: 10, color: mod.color, opacity: 0, transition: "opacity 0.2s" }} className="view-hint">查看答案 →</span>
@@ -284,7 +302,7 @@ export default function Board() {
 
       <footer style={{ textAlign: "center", padding: "20px", borderTop: "1px solid #e8e8e4" }}>
         <p style={{ fontSize: 10, color: "#bbb", lineHeight: 1.6 }}>
-          合并去重61题 · 8模块 · 含二轮面试自建MySQL洞察<br/>核心价值观: 本分 · 求责于己 · 积极主动 · 终局思维
+          {total}题 · {modules.length}模块 · CTO终面行为+技术+文化全覆盖<br/>核心价值观: 本分 · 求责于己 · 积极主动 · 终局思维
         </p>
       </footer>
 
@@ -299,6 +317,20 @@ export default function Board() {
         div:hover > .view-hint { opacity: 1 !important; }
       `}</style>
     </div>
+  );
+}
+
+function highlightText(text, query) {
+  if (!query) return text;
+  const ql = query.toLowerCase();
+  const idx = text.toLowerCase().indexOf(ql);
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{ background: "#FFF176", borderRadius: 2, padding: "0 1px" }}>{text.slice(idx, idx + query.length)}</mark>
+      {text.slice(idx + query.length)}
+    </>
   );
 }
 
